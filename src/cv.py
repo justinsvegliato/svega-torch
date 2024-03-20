@@ -13,7 +13,7 @@ IMAGE_SIZE = 28
 HIDDEN_SIZE = 512
 NUM_CLASSES = 10
 
-LEARNING_RATE = 1e-2
+LEARNING_RATE = 1e-3
 BATCH_SIZE = 64
 EPOCHS = 10
 
@@ -26,11 +26,13 @@ class FeedForwardNeuralNetwork(nn.Module):
         self.stack = nn.Sequential(
             modules.SvegaFlatten(),
             modules.SvegaLinear(IMAGE_SIZE * IMAGE_SIZE, HIDDEN_SIZE),
-            modules.SvegaLayerNorm(HIDDEN_SIZE),
+            modules.SvegaBatchNorm(HIDDEN_SIZE),
             modules.SvegaLeakyReLU(alpha=0.01),
+            modules.SvegaDropout(probability=0.2),
             modules.SvegaLinear(HIDDEN_SIZE, HIDDEN_SIZE),
-            modules.SvegaLayerNorm(HIDDEN_SIZE),
+            modules.SvegaBatchNorm(HIDDEN_SIZE),
             modules.SvegaLeakyReLU(alpha=0.01),
+            modules.SvegaDropout(probability=0.2),
             modules.SvegaLinear(HIDDEN_SIZE, NUM_CLASSES)
         )
 

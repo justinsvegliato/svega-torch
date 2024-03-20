@@ -40,3 +40,12 @@ def test_model(model, dataloader, loss_function):
 
     print(f"Accuracy: {(accuracy):>0.1f}%")
     print(f"Average Loss: {average_batch_loss:>8f}")
+
+
+def partition_dataset(dataset, dataset_split):
+    split_index = int(dataset_split * len(dataset))
+
+    training_data = dataset[:split_index]
+    validation_data = dataset[split_index:]
+
+    return training_data, validation_data
