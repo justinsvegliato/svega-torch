@@ -1,13 +1,17 @@
 import torch
 
 
-def train_model(model, dataloader, loss_function, optimizer):
+def train_model(model, dataloader, loss_function, optimizer, num_batches=2000):
         model.train()
 
         dataset_size = len(dataloader.dataset)
 
         for batch_id, (X, y) in enumerate(dataloader):
+            if batch_id >= num_batches:
+                break
+
             y_hat = model(X)
+
             loss = loss_function(y_hat, y)
 
             loss.backward()
@@ -17,35 +21,27 @@ def train_model(model, dataloader, loss_function, optimizer):
             if batch_id % 100 == 0:
                 loss = loss.item()
                 current_training_example_id = batch_id * dataloader.batch_size + len(X)
-                print(f"Loss: {loss:>7f} [{current_training_example_id:>5d}{dataset_size:>5d}]")
+                print(f"Loss: {loss:>7f} [{current_training_example_id:>5d}{dataset_size:>5d}]")             
 
 
 def test_model(model, dataloader, loss_function):
     model.eval()
 
-    dataset_size = len(dataloader.dataset)
     num_batches = len(dataloader)
 
     cumulative_loss = 0
     num_correct = 0
+    num_predictions = 0
 
     with torch.no_grad():
          for X, y in dataloader:
               y_hat = model(X)
               cumulative_loss += loss_function(y_hat, y).item()
-              num_correct += (y_hat.argmax(1) == y).type(torch.float).sum().item()
+              num_predictions += y.numel()
+              num_correct += (y_hat.argmax(-1) == y).type(torch.float).sum().item()
 
-    accuracy = (num_correct / dataset_size) * 100
+    accuracy = (num_correct / num_predictions) * 100
     average_batch_loss = cumulative_loss / num_batches
 
     print(f"Accuracy: {(accuracy):>0.1f}%")
     print(f"Average Loss: {average_batch_loss:>8f}")
-
-
-def partition_dataset(dataset, dataset_split):
-    split_index = int(dataset_split * len(dataset))
-
-    training_data = dataset[:split_index]
-    validation_data = dataset[split_index:]
-
-    return training_data, validation_data

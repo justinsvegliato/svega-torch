@@ -11,20 +11,17 @@ import utils
 CORPUS_FILENAME = "data/shakespeare-corpus.txt"
 DATASET_SPLIT = 0.90
 
-PREVIEW_LENGTH = 10
+SEQUENCE_LENGTH = 16
+EMBEDDING_SIZE = 64
+NUM_TRANSFORMER_BLOCKS = 8
+NUM_HEADS = 8
 
-EMBEDDING_SIZE = 32
-SEQUENCE_LENGTH = 8
-NUM_TRANSFORMER_BLOCKS = 2
-NUM_HEADS = 4
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-TRAINING_STEPS = 5000
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-2
 BATCH_SIZE = 32
-EPOCHS = 10
+EPOCHS = 5
+NUM_BATCHES = 2000
 
-CHECKPOINT_DIRECTORY = "checkpoints"
+CHECKPOINT_DIRECTORY = "checkpoints/nlp_checkpoints"
 
 
 def main():
@@ -35,8 +32,8 @@ def main():
     test_size = len(dataset) - train_size
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
-    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
-    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
+    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     model = modules.SvegaGPT(
         vocabulary_size, 
@@ -45,36 +42,21 @@ def main():
         NUM_TRANSFORMER_BLOCKS, 
         NUM_HEADS
     )
-
-    # input_token = torch.zeros((1, 1), dtype=torch.long)
-    # input_character = decode(input_token[0].tolist())
-    # print(f"Input Token: {input_token}")
-    # print(f"Input Character: {input_character}")
-    # print("========================================")
-
-    # output_tokens = model.generate(input_token, max_new_tokens=300)
-    # output_characters = decode(output_tokens[0].tolist())
-    # print(f"Output Tokens: {output_tokens}")
-    # print(f"Output Characters: {output_characters}")
-    # print("========================================")
-
-    optimizer = optimizers.SvegaSGD(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
     for epoch in range(1, EPOCHS + 1):
         print(f"Epoch {epoch} --------------------")
 
-        utils.train_model(model, train_dataloader, functions.SvegaCrossEntropyLoss, optimizer)
+        utils.train_model(model, train_dataloader, functions.SvegaCrossEntropyLoss, optimizer, NUM_BATCHES)
         utils.test_model(model, test_dataloader, functions.SvegaCrossEntropyLoss)
 
         torch.save(model.state_dict(), f"{CHECKPOINT_DIRECTORY}/checkpoint_{epoch}.pth")
 
-        print()
+        context = torch.zeros((1, 1), dtype=torch.long)
+        tokens = model.generate(context, max_new_tokens=500)[0].tolist()
+        print(dataset.decode(tokens))
 
-    # output_tokens = model.generate(input_token, max_new_tokens=300)
-    # output_characters = decode(output_tokens[0].tolist())
-    # print(f"Output Tokens: {output_tokens}")
-    # print(f"Output Characters: {output_characters}")
-    # print("========================================")
+        print()
 
 
 if __name__ == "__main__":

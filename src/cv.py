@@ -15,9 +15,9 @@ NUM_CLASSES = 10
 
 LEARNING_RATE = 1e-3
 BATCH_SIZE = 64
-EPOCHS = 10
+EPOCHS = 5
 
-CHECKPOINT_DIRECTORY = "checkpoints"
+CHECKPOINT_DIRECTORY = "checkpoints/cv_checkpoints"
 
 
 class FeedForwardNeuralNetwork(nn.Module):

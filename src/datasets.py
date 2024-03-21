@@ -26,8 +26,14 @@ class TextDataset(Dataset):
 
     def __getitem__(self, index):
         sequence = self.dataset[index:index + self.sequence_length]
-        target = self.dataset[index + self.sequence_length]
+        target = self.dataset[index + 1:index + self.sequence_length + 1]
         return sequence, target
     
     def get_vocabulary_size(self):
         return len(self.vocabulary)
+
+    def encode(self, string):
+        return [self.char_to_int_map[char] for char in string]
+
+    def decode(self, tokens):
+        return "".join([self.int_to_char_map[token] for token in tokens])
