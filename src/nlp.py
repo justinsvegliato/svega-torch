@@ -11,12 +11,12 @@ import utils
 CORPUS_FILENAME = "data/shakespeare-corpus.txt"
 DATASET_SPLIT = 0.90
 
-SEQUENCE_LENGTH = 16
-EMBEDDING_SIZE = 64
-NUM_TRANSFORMER_BLOCKS = 8
-NUM_HEADS = 8
+SEQUENCE_LENGTH = 8
+EMBEDDING_SIZE = 16
+NUM_TRANSFORMER_BLOCKS = 2
+NUM_HEADS = 4
 
-LEARNING_RATE = 1e-2
+LEARNING_RATE = 1e-3
 BATCH_SIZE = 32
 EPOCHS = 5
 NUM_BATCHES = 2000
@@ -42,7 +42,7 @@ def main():
         NUM_TRANSFORMER_BLOCKS, 
         NUM_HEADS
     )
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optimizers.SvegaAdam(model.parameters(), lr=LEARNING_RATE, beta1=0.9, beta2=0.999)
 
     for epoch in range(1, EPOCHS + 1):
         print(f"Epoch {epoch} --------------------")
