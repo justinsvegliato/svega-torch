@@ -1,1 +1,1 @@
-# `pytorch-practice`
+# `svega-torch`
