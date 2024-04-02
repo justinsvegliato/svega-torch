@@ -7,10 +7,10 @@ class SvegaLinear(nn.Module):
     def __init__(self, input_dimension, output_dimension, bias=True):
         super().__init__()
 
-        self.bias = bias
-
         self.weights = nn.Parameter(torch.empty(input_dimension, output_dimension))
         nn.init.kaiming_uniform_(self.weights)
+
+        self.bias = bias
 
         if self.bias:
             self.biases = nn.Parameter(torch.empty(output_dimension))
@@ -179,8 +179,8 @@ class SvegaTransformerBlock(nn.Module):
         self.multi_head_self_attention = SvegaMultiHeadSelfAttention(num_heads, head_size, sequence_length, embedding_size)
         self.feed_forward_layer = SvegaFeedForwardLayer(embedding_size)
 
-        self.layer_norm_1 = nn.LayerNorm(embedding_size)
-        self.layer_norm_2 = nn.LayerNorm(embedding_size)
+        self.layer_norm_1 = SvegaLayerNorm(embedding_size)
+        self.layer_norm_2 = SvegaLayerNorm(embedding_size)
 
     def forward(self, X):
         multi_head_attention_output = self.multi_head_self_attention(X) + X
