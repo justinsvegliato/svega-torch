@@ -20,7 +20,102 @@ class SvegaLinear(nn.Module):
         if self.bias:
             return X @ self.weights + self.biases
         return X @ self.weights
-  
+    
+
+class SvegaSlowConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
+        super().__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_height = kernel_size
+        self.kernel_width = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+        self.kernel = nn.Parameter(torch.empty(out_channels, in_channels, self.kernel_height, self.kernel_width))
+        nn.init.kaiming_uniform_(self.kernel)
+
+    def forward(self, X):
+        B, _, H, W = X.shape
+
+        X_padded = F.pad(X, (self.padding, self.padding, self.padding, self.padding), "constant", 0)
+
+        feature_map_height = int((H + 2 * self.padding - self.kernel_height) / self.stride) + 1
+        feature_map_width = int((W + 2 * self.padding - self.kernel_width) / self.stride) + 1
+
+        feature_map = torch.zeros((B, self.out_channels, feature_map_height, feature_map_width))
+
+        for batch in range(B):
+            for out_channel in range(self.out_channels):
+                for row in range(feature_map_height):
+                    for col in range(feature_map_width):
+                        input_tensor = X_padded[batch, 0:self.in_channels, row * self.stride:row * self.stride + self.kernel_height, col * self.stride:col * self.stride + self.kernel_width]
+                        kernel_tensor = self.kernel[out_channel]
+                        feature_map[batch, out_channel, row, col] = torch.sum(input_tensor * kernel_tensor)
+
+        return feature_map
+    
+
+class SvegaFastConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
+        super().__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_height = kernel_size
+        self.kernel_width = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+        self.kernel = nn.Parameter(torch.empty(out_channels, in_channels * self.kernel_height * self.kernel_width))
+        nn.init.kaiming_uniform_(self.kernel)
+
+    def forward(self, X):
+        B, _, H, W = X.shape
+
+        X_padded = F.pad(X, (self.padding, self.padding, self.padding, self.padding), "constant", 0)
+
+        patches = F.unfold(X_padded, kernel_size=(self.kernel_height, self.kernel_width), stride=self.stride)
+
+        unfolded_feature_map = self.kernel @ patches
+
+        feature_map_height = int((H + 2 * self.padding - self.kernel_height) / self.stride) + 1
+        feature_map_width = int((W + 2 * self.padding - self.kernel_width) / self.stride) + 1
+
+        feature_map = unfolded_feature_map.view(B, self.out_channels, feature_map_height, feature_map_width)
+
+        return feature_map
+    
+
+class SvegaSlowMaxPool2d(nn.Module):
+    def __init__(self, kernel_size, stride):
+        super().__init__()
+
+        self.kernel_height = kernel_size
+        self.kernel_width = kernel_size
+        self.stride = stride
+
+    def forward(self, X):
+        B, C, H, W = X.shape
+
+        output_map_height = int((H - self.kernel_height) / self.stride) + 1
+        output_map_width = int((W - self.kernel_width) / self.stride) + 1
+
+        output_map = torch.zeros((B, C, output_map_height, output_map_width))
+
+        for batch in range(B):
+            for channel in range(C):
+                for row in range(output_map_height):
+                    for col in range(output_map_width):
+                        row_start = row * self.stride
+                        row_end = row_start + self.kernel_height
+                        col_start = col * self.stride
+                        col_end = col_start + self.kernel_width
+                        output_map[batch, channel, row, col] = torch.max(X[batch, channel, row_start:row_end, col_start:col_end])
+
+        return output_map
+
 
 class SvegaLeakyReLU(nn.Module):
     def __init__(self, alpha=0):
