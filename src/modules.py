@@ -224,7 +224,7 @@ class SvegaSelfAttentionHead(nn.Module):
         keys = self.key_layer(X)
         queries = self.query_layer(X)
         values = self.value_layer(X)
-
+        
         attention_weights = queries @ keys.transpose(-2, -1) * (self.head_size ** -0.5)
         masked_attention_weights = attention_weights.masked_fill(self.mask[:sequence_length, :sequence_length] == 0, float("-inf"))
         attention_probabilities = F.softmax(masked_attention_weights, dim=-1)
@@ -246,8 +246,8 @@ class SvegaMultiHeadSelfAttention(nn.Module):
 
     def forward(self, X):
         attention_output = torch.cat([self_attention_head(X) for self_attention_head in self.self_attention_heads], dim=-1)
-        projected_attention_output = self.projection_layer(attention_output)
-        return projected_attention_output
+        mixed_attention_output = self.projection_layer(attention_output)
+        return mixed_attention_output
     
 
 class SvegaFeedForwardLayer(nn.Module):
@@ -278,10 +278,10 @@ class SvegaTransformerBlock(nn.Module):
         self.layer_norm_2 = SvegaLayerNorm(embedding_size)
 
     def forward(self, X):
-        multi_head_attention_output = self.multi_head_self_attention(X) + X
+        multi_head_attention_output = X + self.multi_head_self_attention(X)
         normalized_multi_head_attention_output = self.layer_norm_1(multi_head_attention_output)
 
-        feed_forward_output = self.feed_forward_layer(normalized_multi_head_attention_output) + normalized_multi_head_attention_output
+        feed_forward_output = normalized_multi_head_attention_output + self.feed_forward_layer(normalized_multi_head_attention_output)
         normalized_feed_forward_output = self.layer_norm_2(feed_forward_output)
 
         return normalized_feed_forward_output

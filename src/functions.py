@@ -20,3 +20,4 @@ def SvegaCrossEntropyLoss(logits, labels):
     average_log_likelihood = total_log_likelihood.sum() / total_log_likelihood.numel()
 
     return -average_log_likelihood
+
